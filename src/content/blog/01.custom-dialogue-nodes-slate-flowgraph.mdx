@@ -1,0 +1,28 @@
+---
+title: "Custom dialogue nodes with Slate using FlowGraph"
+description: "I think narrative designers should have some fun with tools, as a treat"
+pubDate: "Jul 15 2022"
+heroImage: "/cdns/heroimg.jpeg"
+---
+
+import ImageWithAltText from "./_components/ImageWithAltText.svelte";
+
+export const components = { img: ImageWithAltText };
+
+import UENode from "./_01.custom-dialogue-nodes-slate-flowgraph/UENode.svelte";
+
+While working on my dialogue editor for my platformer game recently, I thought, why not make these
+
+<UENode title="boring ass nodes" />
+look more interesting?
+
+## Where I've started
+
+Below is a screenshot of what essentially is a Before and After.  
+![Pictured from bottom to top: a node that's a prototype implementation of the Dialogue Node made completely in Blueprint, and a node that's been reimplemented with C++, with custom styling that looks almost like how the Dialogue box would look like in-game.](/cdns/before-and-after.png)
+
+I use the [Flow Graph](https://github.com/mothcocoon/flowgraph) plugin made by MothCocoon. It's a design-agnostic node editor, that can be used for practically anything.
+
+I personally use it for Event scripting, but recently I've decided to create a Dialogue variant of it. I still don't have a working implementation of the Dialogue system in my game, but just having the editor made to work the way I wanted it to is already helping me visualize certain dialogue segments.
+
+Another plugin I also use is [Editor Scripting Tools](https://github.com/HoussineMehnik/UE4-EditorScriptingToolsPlugin) by Elhoussine Mehnik. I use it mainly for the Detail Customization Utility it provides, that lets me customize the Details panel for any class, using Blueprints instead of C++. It also lets me put in UMG widgets directly in there!

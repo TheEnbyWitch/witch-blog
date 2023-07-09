@@ -1,25 +1,25 @@
 ---
-import HeaderLink from './HeaderLink.astro';
-import { SITE_TITLE } from '../consts';
+import HeaderLink from "./HeaderLink.astro";
+import DarkModeToggle from "./DarkModeToggle.svelte";
+import { SITE_TITLE } from "../consts";
 ---
 
-<header>
-	<h2>
-		{SITE_TITLE}
-	</h2>
-	<nav>
-		<HeaderLink href="/">Home</HeaderLink>
-		<HeaderLink href="/blog">Blog</HeaderLink>
-		<HeaderLink href="/about">About</HeaderLink>
-		<HeaderLink href="https://twitter.com/astrodotbuild" target="_blank">Twitter</HeaderLink>
-		<HeaderLink href="https://github.com/withastro/astro" target="_blank">GitHub</HeaderLink>
-	</nav>
+<header
+  class="bg-gradient-to-b from-pink-300/90 to-pink-400/70 dark:from-pink-700/70 dark:to-pink-900/50 backdrop-blur-lg border-pink-600/50 border-b drop-shadow-lg sticky top-0 z-50"
+>
+  <div
+    class="bg-clip-text bg-gradient-to-b text-transparent from-pink-700 to-pink-950 dark:from-pink-50 dark:to-pink-200 flex flex-row gap-4 items-center justify-center px-4"
+  >
+    <h2 class="text-lg font-bold">
+      {SITE_TITLE}
+    </h2>
+    <div class="grow"></div>
+    <nav class="h-full gap-0 flex flex-row">
+      <HeaderLink href="/">Home</HeaderLink>
+      <HeaderLink href="/blog">Blog</HeaderLink>
+    </nav>
+
+    {/*<DarkModeToggle client:load />*/}
+  </div>
 </header>
-<style>
-	header {
-		margin: 0em 0 2em;
-	}
-	h2 {
-		margin: 0.5em 0;
-	}
-</style>
+<style></style>
