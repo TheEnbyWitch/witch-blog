@@ -3,6 +3,15 @@ import MainLayout from "../layouts/MainLayout.astro";
 ---
 
 <MainLayout>
-  <h1>🧙🏻‍♀️ Hello there!</h1>
-  <p>Welcome to my blog! This is mainly an experiment I'm trying out.</p>
+  <article
+    class="max-w-prose mx-auto relative prose-screen:rounded-xl prose-screen:bg-gray-100 dark:prose-screen:bg-transparent dark:prose-screen:bg-gradient-to-bl dark:prose-screen:from-pink-950/70 dark:prose-screen:to-pink-950/50 prose-screen:border prose-screen:border-black/25 prose-screen:drop-shadow-xl p-4 prose prose-pink"
+  >
+    <h1>🧙🏻‍♀️ Hello there!</h1>
+    <p>
+      Welcome to my blog! This is mainly an experiment I'm trying out. I want to
+      practice my writing so I'll try to get stuff out every once in a while.
+    </p>
+    <p>The RSS feed is available <a href="/rss.xml">here</a></p>
+    <p>If you enjoy my writing, please donate to my ko-fi!</p>
+  </article>
 </MainLayout>
