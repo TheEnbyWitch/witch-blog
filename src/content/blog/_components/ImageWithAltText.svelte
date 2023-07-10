@@ -3,8 +3,6 @@
 
   $: splitText = alt.split('|')
 
-  $: console.log(splitText)
-
   $: imgAltDescription = splitText.length > 1 ? splitText[1] : alt
   $: figCaption = splitText.length > 1 ? splitText[0] : alt
 </script>
