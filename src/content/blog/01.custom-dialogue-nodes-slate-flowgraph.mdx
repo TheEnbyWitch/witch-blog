@@ -27,3 +27,17 @@ I use the [Flow Graph](https://github.com/mothcocoon/flowgraph) plugin made by M
 I personally use it for Event scripting, but recently I've decided to create a Dialogue variant of it. I still don't have a working implementation of the Dialogue system in my game, but just having the editor made to work the way I wanted it to is already helping me visualize certain dialogue segments.
 
 Another plugin I also use is [Editor Scripting Tools](https://github.com/HoussineMehnik/UE4-EditorScriptingToolsPlugin) by Elhoussine Mehnik. I use it mainly for the Detail Customization Utility it provides, that lets me customize the Details panel for any class, using Blueprints instead of C++. It also lets me put in UMG widgets directly in there!
+
+![Pictured: the Details panel, with a custom UMG widget that shows how the Dialogue box would look like in-game.](/cdns/detailsumg.png)
+
+This post is mainly going to be focused on the parts that I did in C++. And I also want to mention that it involves Slate... _\*shudders\*_ just kidding, it's actually somewhat easier for me to grasp it now that I've done this thing.
+
+## How much code???
+
+For this, I only needed to create 3 classes, 2 of which live in the game's Editor module. I also modified FlowGraph in certain spots to let me use my custom Slate widget for a Blueprint class and to use the already existing classes there as a base for my own. Let's begin with that!
+
+### FlowGraph edits
+
+First things first, I've exposed the `SFlowGraphNode` and `FFlowEditorStyle` classes, by adding the `FLOWEDITOR_API` macro to the class definitions, which automatically adds the dllexport and dllimport attributes, which are required to access the classes from outside the FlowEditor module, which lets me inherit from `SFlowGraphNode`, and use the styling from the plugin.
+
+Then, I modified the `GetAssignedGraphNodeClass` function in UFlowGraphSchema, to account for child classes. I only did this so that I could have Blueprint classes inherited from my C++ classes to be able to have the same visual representation as their parent.
