@@ -16,21 +16,33 @@ const posts = (await getCollection("blog"))
     }
     return v.data.draft !== true;
   })
-  .sort((a, b) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf());
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
 <MainLayout>
   <section>
-    <ul>
+    <ul
+      class="flex flex-col md:flex-row md:flex-wrap justify-center items-center gap-4 p-4 my-4"
+    >
       {
         posts.map((post) => (
-          <li>
-            <FormattedDate date={post.data.pubDate} />
-            <a href={`/blog/${post.slug}/`}>
+          <li class="rounded-xl bg-gray-100 dark:bg-transparent dark:bg-gradient-to-bl dark:from-pink-950/70 dark:to-pink-950/50 border border-black/25 drop-shadow-xl max-w-md">
+            <a href={`/blog/${post.slug}/`} class=" p-4 block">
+              <img
+                class="rounded-xl border border-black/25 mb-4"
+                src={post.data.heroImage}
+              />
               <>
-                <h2>{post.data.title}</h2>
+                <h2 class="text-lg font-bold text-pink-950 dark:text-pink-50">
+                  {post.data.title}
+                </h2>
                 <p>{post.data.description}</p>
               </>
+
+              <FormattedDate
+                class="block text-right opacity-50"
+                date={post.data.pubDate}
+              />
             </a>
           </li>
         ))
