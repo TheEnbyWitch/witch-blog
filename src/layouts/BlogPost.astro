@@ -11,7 +11,11 @@ type Props = CollectionEntry<"blog">["data"];
 const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 ---
 
-<MainLayout>
+<MainLayout
+  pageTitle={title}
+  pageDescription={description}
+  pageImage={heroImage}
+>
   <article
     class="max-w-prose mx-auto relative prose-screen:rounded-xl prose-screen:bg-gray-100 dark:prose-screen:bg-transparent dark:prose-screen:bg-gradient-to-bl dark:prose-screen:from-pink-950/70 dark:prose-screen:to-pink-950/50 prose-screen:border prose-screen:border-black/25 prose-screen:drop-shadow-xl p-4"
   >

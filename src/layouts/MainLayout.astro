@@ -3,12 +3,18 @@ import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+
+const { pageTitle, pageDescription, pageImage } = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <BaseHead
+      title={pageTitle ? `${pageTitle} - ${SITE_TITLE}` : SITE_TITLE}
+      description={pageDescription ? pageDescription : SITE_DESCRIPTION}
+      image={pageImage ? pageImage : "/placeholder-social.jpg"}
+    />
   </head>
   <body
     class="relative min-h-screen bg-white dark:bg-black bg-gradient-to-br from-pink-50 to-pink-100 text-slate-900 dark:from-pink-950 dark:via-pink-900 dark:to-pink-700 dark:text-slate-200"
