@@ -7,8 +7,11 @@ heroImage: "/cdns/heroimg.jpeg"
 ---
 
 import ImageWithAltText from "./_components/ImageWithAltText.svelte";
+import Collapsible from "./_components/Collapsible.svelte";
 
-export const components = { img: ImageWithAltText };
+export const components = {
+  img: ImageWithAltText,
+};
 
 import UENode from "./_01.custom-dialogue-nodes-slate-flowgraph/UENode.svelte";
 
@@ -40,4 +43,779 @@ For this, I only needed to create 3 classes, 2 of which live in the game's Edito
 
 First things first, I've exposed the `SFlowGraphNode` and `FFlowEditorStyle` classes, by adding the `FLOWEDITOR_API` macro to the class definitions, which automatically adds the dllexport and dllimport attributes, which are required to access the classes from outside the FlowEditor module, which lets me inherit from `SFlowGraphNode`, and use the styling from the plugin.
 
+![](/cdns/04.png)
+![](/cdns/05.png)
+
 Then, I modified the `GetAssignedGraphNodeClass` function in UFlowGraphSchema, to account for child classes. I only did this so that I could have Blueprint classes inherited from my C++ classes to be able to have the same visual representation as their parent.
+
+![](/cdns/06.png)
+
+## Let's make our node!
+
+I'm not going to go into how I've created my FlowGraph node in C++, but the main gist of it is that I exposed all the necessary features and variables I would need in BPs and the widget I'm going to create for it. So we're getting the dialogue text from it, a character portrait, the title (and color) that change based on the selected speaker.
+
+I've made 2 classes in my Editor module, UFlowGraphNode_Dialogue (inheriting from UFlowGraphNode) and SFlowGraphNode_Dialogue (inheriting from SFlowGraphNode, which I've exposed earlier). The first one is the graph representation of the node, that also handles the creation of the Slate widget, and the other is the Slate widget itself.
+
+![](/cdns/07.png)
+
+## This Is The Part Where We Let Unreal Know What's The Graph Representation Of The Node
+
+### UFlowGraphNode_Dialogue.h
+
+<Collapsible client:idle>
+
+```cpp
+// 2022 The Enby Witch
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Graph/Nodes/FlowGraphNode.h"
+#include "UObject/Object.h"
+#include "UFlowGraphNode_Dialogue.generated.h"
+
+/**
+ *
+ */
+UCLASS()
+class PLATFORMERGAMEEDITOR_API UFlowGraphNode_Dialogue : public UFlowGraphNode
+{
+	GENERATED_UCLASS_BODY()
+
+	// UEdGraphNode
+	virtual TSharedPtr<SGraphNode> CreateVisualWidget() override;
+	// --
+};
+```
+
+</Collapsible>
+
+### UFlowGraphNode_Dialogue.cpp
+
+<Collapsible client:idle>
+
+```cpp
+// 2022 The Enby Witch
+
+
+#include "UFlowGraphNode_Dialogue.h"
+#include "PlatformerGameEditor/Flow/Widgets/SFlowGraphNode_Dialogue.h"
+
+#include "PlatformerGame/Flow/Nodes/Dialogue/FlowDialogueNode.h"
+
+UFlowGraphNode_Dialogue::UFlowGraphNode_Dialogue(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	AssignedNodeClasses = {UFlowDialogueNodeBase::StaticClass()};
+}
+
+TSharedPtr<SGraphNode> UFlowGraphNode_Dialogue::CreateVisualWidget()
+{
+	return SNew(SFlowGraphNode_Dialogue, this);
+}
+```
+
+</Collapsible>
+
+The constructor assigns my Flow node class to the variable, so that the FlowGraphSchema knows to assign our node class this graph representation.
+
+Then the CreateVisualWidget function creates our Slate widget, and since we're inheriting from UFlowGraphNode, we already have our node assigned to the variable that exists on the parent class, so we're just passing this instance of the class to it.
+
+## This Is The Part Where The Widget Is Created
+
+### SFlowGraphNode_Dialogue.h
+
+<Collapsible client:idle>
+
+```cpp
+// 2022 The Enby Witch
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Graph/Widgets/SFlowGraphNode.h"
+#include "Widgets/SCompoundWidget.h"
+
+/**
+ *
+ */
+class PLATFORMERGAMEEDITOR_API SFlowGraphNode_Dialogue : public SFlowGraphNode
+{
+protected:
+
+	virtual void UpdateGraphNode() override;
+
+	virtual TSharedRef<SWidget> CreateDialogueContentArea();
+	virtual TSharedRef<SWidget> CreateNodeContentArea() override;
+	virtual void CreateBelowPinControls(TSharedPtr<SVerticalBox> MainBox) override;
+
+	virtual TSharedRef<SWidget> CreateTitleBar();
+
+public:
+	SLATE_BEGIN_ARGS(SFlowGraphNode_Dialogue) {}
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs, UFlowGraphNode* InNode);
+
+
+	/** Used to display the name of the node and allow renaming of the node */
+	TSharedPtr<SVerticalBox> TitleBox;
+	TSharedPtr<SHorizontalBox> TitleBoxH;
+
+	FSlateBrush Brush;
+
+	FSlateColor SpeakerTextColor;
+	FSlateColor PronounTextColor;
+
+	FSlateColor SpeakerBgColor;
+	FSlateBrush SpeakerBgBrush;
+	FSlateBrush SpeakerBgCornerBrush;
+
+	FSlateColor PronounBgColor;
+	FSlateBrush PronounBgBrush;
+	FSlateBrush PronounBgCornerBrush;
+};
+```
+
+</Collapsible>
+
+### SFlowGraphNode_Dialogue.cpp (this one is gonna be a long block of code)
+
+<Collapsible client:idle>
+
+```cpp
+// 2022 The Enby Witch
+
+
+#include "SFlowGraphNode_Dialogue.h"
+
+#include "FlowEditorStyle.h"
+#include "GraphEditorSettings.h"
+#include "SCommentBubble.h"
+#include "SLevelOfDetailBranchNode.h"
+#include "SlateOptMacros.h"
+#include "TutorialMetaData.h"
+#include "Materials/MaterialInstance.h"
+#include "PlatformerGame/PGBlueprintFunctionLibrary.h"
+#include "PlatformerGame/PlatformerDialogue.h"
+#include "PlatformerGame/Flow/Nodes/Dialogue/FlowDialogueNode.h"
+#include "PlatformerGameEditor/PlatformerEditorSettings.h"
+#include "Widgets/Text/SInlineEditableTextBlock.h"
+
+
+#define LOCTEXT_NAMESPACE "PGFlowEditor"
+
+void SFlowGraphNode_Dialogue::UpdateGraphNode()
+{
+	InputPins.Empty();
+	OutputPins.Empty();
+
+	// Reset variables that are going to be exposed, in case we are refreshing an already setup node.
+	RightNodeBox.Reset();
+	LeftNodeBox.Reset();
+
+	//	     ______________________
+	//	    |      TITLE AREA      |
+	//	    +-------+------+-------+
+	//	    | (>) L |      | R (>) |
+	//	    | (>) E |      | I (>) |
+	//	    | (>) F |      | G (>) |
+	//	    | (>) T |      | H (>) |
+	//	    |       |      | T (>) |
+	//	    |_______|______|_______|
+	//
+	TSharedPtr<SVerticalBox> MainVerticalBox;
+	SetupErrorReporting();
+
+	const TSharedPtr<SNodeTitle> NodeTitle = SNew(SNodeTitle, GraphNode);
+
+	// Get node icon
+	IconColor = FLinearColor::White;
+	const FSlateBrush* IconBrush = nullptr;
+	if (GraphNode && GraphNode->ShowPaletteIconOnNode())
+	{
+		IconBrush = GraphNode->GetIconAndTint(IconColor).GetOptionalIcon();
+	}
+
+	const TSharedRef<SOverlay> DefaultTitleAreaWidget = SNew(SOverlay)
+		+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+					.HAlign(HAlign_Fill)
+					[
+						SNew(SBorder)
+							.BorderImage(FFlowEditorStyle::GetBrush("Flow.Node.Title"))
+							// The extra margin on the right is for making the color spill stretch well past the node title
+							.Padding(FMargin(10, 5, 30, 3))
+							.BorderBackgroundColor(this, &SGraphNode::GetNodeTitleColor)
+							[
+								SNew(SHorizontalBox)
+								+ SHorizontalBox::Slot()
+									.VAlign(VAlign_Top)
+									.Padding(FMargin(0.f, 0.f, 4.f, 0.f))
+									.AutoWidth()
+									[
+										SNew(SImage)
+											.Image(IconBrush)
+											.ColorAndOpacity(this, &SGraphNode::GetNodeTitleIconColor)
+									]
+								+ SHorizontalBox::Slot()
+									[
+										SNew(SVerticalBox)
+										+ SVerticalBox::Slot()
+											.AutoHeight()
+											[
+												CreateTitleWidget(NodeTitle)
+											]
+										+ SVerticalBox::Slot()
+											.AutoHeight()
+											[
+												NodeTitle.ToSharedRef()
+											]
+									]
+							]
+					]
+			];
+
+	// Setup a meta tag for this node
+	FGraphNodeMetaData TagMeta(TEXT("FlowGraphNode"));
+	PopulateMetaTag(&TagMeta);
+
+	this->ContentScale.Bind(this, &SGraphNode::GetContentScale);
+
+	const TSharedPtr<SVerticalBox> InnerVerticalBox = SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+			.AutoHeight()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				CreateNodeContentArea()
+			];
+
+	const TSharedPtr<SWidget> EnabledStateWidget = GetEnabledStateWidget();
+	if (EnabledStateWidget.IsValid())
+	{
+		InnerVerticalBox->AddSlot()
+			.AutoHeight()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(2, 0))
+			[
+				EnabledStateWidget.ToSharedRef()
+			];
+	}
+
+	InnerVerticalBox->AddSlot()
+		.AutoHeight()
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			ErrorReporting->AsWidget()
+		];
+
+	this->GetOrAddSlot(ENodeZone::Center)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SAssignNew(MainVerticalBox, SVerticalBox)
+			+ SVerticalBox::Slot()
+				.HAlign(HAlign_Left)
+				.AutoHeight()
+				[
+					CreateTitleBar()
+				]
+			+ SVerticalBox::Slot()
+				.HAlign(HAlign_Fill)
+				.AutoHeight()
+				[
+					SNew(SOverlay)
+						.AddMetaData<FGraphNodeMetaData>(TagMeta)
+						+ SOverlay::Slot()
+							.Padding(Settings->GetNonPinNodeBodyPadding())
+							[
+								SNew(SImage)
+									.Image(GetNodeBodyBrush())
+									.ColorAndOpacity(this, &SGraphNode::GetNodeBodyColor)
+							]
+						+ SOverlay::Slot()
+							[
+								InnerVerticalBox.ToSharedRef()
+							]
+				]
+		];
+
+	if (GraphNode && GraphNode->SupportsCommentBubble())
+	{
+		// Create comment bubble
+		TSharedPtr<SCommentBubble> CommentBubble;
+		const FSlateColor CommentColor = GetDefault<UGraphEditorSettings>()->DefaultCommentNodeTitleColor;
+
+		SAssignNew(CommentBubble, SCommentBubble)
+			.GraphNode(GraphNode)
+			.Text(this, &SGraphNode::GetNodeComment)
+			.OnTextCommitted(this, &SGraphNode::OnCommentTextCommitted)
+			.OnToggled(this, &SGraphNode::OnCommentBubbleToggled)
+			.ColorAndOpacity(CommentColor)
+			.AllowPinning(true)
+			.EnableTitleBarBubble(true)
+			.EnableBubbleCtrls(true)
+			.GraphLOD(this, &SGraphNode::GetCurrentLOD)
+			.IsGraphNodeHovered(this, &SGraphNode::IsHovered);
+
+		GetOrAddSlot(ENodeZone::TopCenter)
+			.SlotOffset(TAttribute<FVector2D>(CommentBubble.Get(), &SCommentBubble::GetOffset))
+			.SlotSize(TAttribute<FVector2D>(CommentBubble.Get(), &SCommentBubble::GetSize))
+			.AllowScaling(TAttribute<bool>(CommentBubble.Get(), &SCommentBubble::IsScalingAllowed))
+			.VAlign(VAlign_Top)
+			[
+				CommentBubble.ToSharedRef()
+			];
+	}
+
+	CreateBelowWidgetControls(MainVerticalBox);
+	CreatePinWidgets();
+	CreateInputSideAddButton(LeftNodeBox);
+	CreateOutputSideAddButton(RightNodeBox);
+	CreateBelowPinControls(InnerVerticalBox);
+	CreateAdvancedViewArrow(InnerVerticalBox);
+}
+
+TSharedRef<SWidget> SFlowGraphNode_Dialogue::CreateDialogueContentArea()
+{
+	if (UFlowNode* FlowNode = FlowGraphNode->GetFlowNode())
+	{
+		const UFlowDialogueNodeBase* DialogueNode = Cast<UFlowDialogueNodeBase>(FlowNode);
+		if(DialogueNode)
+		{
+			bool UseImage = false;
+			Brush.ImageSize = FVector2D(64,64);
+
+			if(UTexture2D* Portrait = DialogueNode->GetSpeakerPortrait())
+			{
+				UseImage = true;
+				Brush.SetResourceObject(Portrait);
+			}
+
+			FText DialogueText = DialogueNode->GetReadableDialogueString();
+			if(UseImage)
+			{
+				return SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.HAlign(HAlign_Left)
+						.VAlign(VAlign_Bottom)
+						.AutoWidth()
+						.Padding(0.f)
+							[
+								SNew(SImage)
+								.Image(&Brush)
+							]
+
+						+ SHorizontalBox::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Center)
+						.FillWidth(1.0f)
+						.Padding(10.f)
+							[
+								SNew(STextBlock)
+								.Text(DialogueText)
+								.WrapTextAt(250.f)
+							];
+			}
+			else
+			{
+				return SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.VAlign(VAlign_Center)
+						.Padding(10.f)
+							[
+								SNew(STextBlock)
+								.Text(DialogueText)
+								.WrapTextAt(250.f)
+							];
+			}
+		}
+	}
+
+	return SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.Padding(10.f)
+					[
+						SNew(STextBlock)
+						.Text(LOCTEXT("BrokenNode", "This node seems to be broken. Please recreate it!"))
+						.WrapTextAt(370.f)
+					];
+}
+
+TSharedRef<SWidget> SFlowGraphNode_Dialogue::CreateNodeContentArea()
+{
+	return SNew(SBorder)
+		.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Center)
+			.AutoWidth()
+			[
+				SAssignNew(LeftNodeBox, SVerticalBox)
+			]
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1.0f)
+			[
+				CreateDialogueContentArea()
+			]
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(RightNodeBox, SVerticalBox)
+			]
+		];
+}
+
+void SFlowGraphNode_Dialogue::CreateBelowPinControls(TSharedPtr<SVerticalBox> MainBox)
+{
+}
+
+TSharedRef<SWidget> SFlowGraphNode_Dialogue::CreateTitleBar()
+{
+	FText NodeTitleText = LOCTEXT("InvalidSpeaker", "Invalid Speaker!");
+	FText NodeTitlePronouns;
+	FLinearColor SpeakerColor;
+	FLinearColor PronounColor;
+	if (UFlowNode* FlowNode = FlowGraphNode->GetFlowNode())
+	{
+		const UFlowDialogueNodeBase* DialogueNode = Cast<UFlowDialogueNodeBase>(FlowNode);
+		{
+			NodeTitleText = DialogueNode->GetSpeakerName();
+			NodeTitlePronouns = DialogueNode->GetPronounsText();
+			SpeakerColor = DialogueNode->GetSpeakerColor();
+			PronounColor = DialogueNode->GetPronounColor();
+		}
+	}
+
+	UMaterialInterface* tbg = UPlatformerEditorSettings::Get()->TitleBackground.LoadSynchronous();
+	UMaterialInterface* tbgc = UPlatformerEditorSettings::Get()->TitleBackgroundCorner.LoadSynchronous();
+
+	SpeakerBgBrush.SetResourceObject(tbg);
+	SpeakerBgBrush.TintColor = SpeakerColor;
+	SpeakerBgCornerBrush.SetResourceObject(tbgc);
+	SpeakerBgCornerBrush.TintColor = SpeakerColor;
+	PronounBgBrush.SetResourceObject(tbg);
+	PronounBgBrush.TintColor = PronounColor;
+	PronounBgCornerBrush.SetResourceObject(tbgc);
+	PronounBgCornerBrush.TintColor = PronounColor;
+
+
+	SAssignNew(TitleBoxH, SHorizontalBox)
+	+SHorizontalBox::Slot()
+	.AutoWidth()
+	.Padding(10.f,0.f,0.f,0.f)
+	.VAlign(VAlign_Fill)
+	[
+		SNew(SBorder)
+		.BorderImage(&SpeakerBgBrush)
+		.Padding(FMargin(10.f, 4.f))
+		.VAlign(VAlign_Fill)
+		[
+			SAssignNew(InlineEditableText, SInlineEditableTextBlock)
+				.Style(FEditorStyle::Get(), "Graph.Node.NodeTitleInlineEditableText")
+				.Text(NodeTitleText)
+				.ColorAndOpacity(SpeakerTextColor)
+				.IsReadOnly(true)
+				.IsSelected(this, &SFlowGraphNode_Dialogue::IsSelectedExclusively)
+		]
+	]
+	+SHorizontalBox::Slot()
+	.AutoWidth()
+	.VAlign(VAlign_Fill)
+	[
+		SNew(SBorder)
+		.BorderImage(&PronounBgBrush)
+		.Padding(0.f)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SBorder)
+			.BorderImage(&SpeakerBgCornerBrush)
+			.Padding(FMargin(10.f, 0.f))
+			.VAlign(VAlign_Fill)
+		]
+	]
+	+SHorizontalBox::Slot()
+	.AutoWidth()
+	.VAlign(VAlign_Fill)
+	[
+		SNew(SBorder)
+		.BorderImage(&PronounBgBrush)
+		.Padding(FMargin(10.f, 4.f))
+		.VAlign(VAlign_Fill)
+		[
+			SNew(STextBlock)
+			.Text(NodeTitlePronouns)
+			.ColorAndOpacity(PronounTextColor)
+		]
+	]
+	+SHorizontalBox::Slot()
+	.AutoWidth()
+	.VAlign(VAlign_Fill)
+	[
+		SNew(SBorder)
+		.BorderImage(&PronounBgCornerBrush)
+		.Padding(FMargin(10.f, 0.f))
+		.VAlign(VAlign_Fill)
+	];
+
+	return TitleBoxH.ToSharedRef();
+}
+
+void SFlowGraphNode_Dialogue::Construct(const FArguments& InArgs, UFlowGraphNode* InNode)
+{
+	SpeakerTextColor = FLinearColor(0.f, 0.f, 0.f, 1.f);
+	PronounTextColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
+
+	GraphNode = InNode;
+	FlowGraphNode = InNode;
+
+	SetCursor(EMouseCursor::CardinalCross);
+	UpdateGraphNode();
+}
+
+#undef LOCTEXT_NAMESPACE
+```
+
+</Collapsible>
+
+First, let me first introduce you to the CreateBelowPinControls function, which was the first thing I started working with. Here's the very first thing I got to show up:
+
+![](/cdns/08.png)
+
+As you can see, it gives you the space to work with below all the pins on the node (the height is changed automatically so you don't need to worry about it!). A very simple implementation of the function would be:
+
+```cpp
+void SFlowGraphNode_Dialogue::CreateBelowPinControls(TSharedPtr<SVerticalBox> MainBox)
+{
+	if (UFlowNode* FlowNode = FlowGraphNode->GetFlowNode())
+	{
+		const UFlowDialogueNodeBase* DialogueNode = Cast<UFlowDialogueNodeBase>(FlowNode);
+		if(DialogueNode)
+		{
+			FText DialogueText = DialogueNode->GetReadableDialogueString();
+
+			MainBox->AddSlot()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Center)
+				.FillWidth(1.0f)
+				.Padding(10.f)
+					[
+						SNew(STextBlock)
+						.Text(DialogueText)
+						.WrapTextAt(250.f)
+					]
+			];
+		}
+	}
+}
+```
+
+If you don't understand how Slate works, don't fret! Most if not all Slate widgets have an equivalent in UMG, which is itself based on Slate. We are essentially creating a Horizontal Box, with a Text Block inside of it, that will automatically wrap around at 250 pixels, and we're adding it all to the Vertical Box we were given. Fairly simple if you've worked with UMG in the past!
+
+Adding an image was fairly trivial too! First I'd recommend creating a variable of type FSlateBrush (which has to exist in the class, otherwise we're gonna get the dreaded Access Violation), in which we'll store the data needed to show the image properly. In this version of the function, I've created a variable called Brush that exists in the class.
+
+```cpp
+void SFlowGraphNode_Dialogue::CreateBelowPinControls(TSharedPtr<SVerticalBox> MainBox)
+{
+	if (UFlowNode* FlowNode = FlowGraphNode->GetFlowNode())
+	{
+		const UFlowDialogueNodeBase* DialogueNode = Cast<UFlowDialogueNodeBase>(FlowNode);
+		if(DialogueNode)
+		{
+			FText DialogueText = DialogueNode->GetReadableDialogueString();
+
+			Brush.ImageSize = FVector2D(64,64);
+
+			if(UTexture2D* Portrait = DialogueNode->GetSpeakerPortrait())
+			{
+				Brush.SetResourceObject(Portrait);
+			}
+
+			MainBox->AddSlot()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Bottom)
+				.AutoWidth()
+				.Padding(0.f)
+					[
+						SNew(SImage)
+						.Image(&Brush)
+					]
+
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Fill)
+				.FillWidth(1.0f)
+				.Padding(10.f)
+					[
+						SNew(STextBlock)
+						.Text(DialogueText)
+						.WrapTextAt(250.f)
+					]
+			];
+		}
+	}
+}
+```
+
+So here I've added another slot to the Horizontal Box we just made, where the Image widget lives. The size of the widget depends on the ImageSize of the Brush itself. All Brushes need a Resource Object too! Fortunately we can easily give it a Texture, but even a Material will work!
+
+And thus, our beautiful node with character portraits is born!
+
+![](/cdns/09.png)
+
+Now you're probably thinking: "Vivi, what about that empty space in between pins??"
+Good news! We can change that! We just have to override the CreateNodeContentArea function instead. At this point I'd recommend moving the code that we're using to make our own text and image widgets into its own function (like CreateDialogueContentArea), so we can easily reuse and modify it. The code block below is how it would look.
+
+```cpp
+TSharedRef<SWidget> SFlowGraphNode_Dialogue::CreateDialogueContentArea()
+{
+	if (UFlowNode* FlowNode = FlowGraphNode->GetFlowNode())
+	{
+		const UFlowDialogueNodeBase* DialogueNode = Cast<UFlowDialogueNodeBase>(FlowNode);
+		if(DialogueNode)
+		{
+			FText DialogueText = DialogueNode->GetReadableDialogueString();
+
+			Brush.ImageSize = FVector2D(64,64);
+
+			if(UTexture2D* Portrait = DialogueNode->GetSpeakerPortrait())
+			{
+				Brush.SetResourceObject(Portrait);
+			}
+
+			return SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Bottom)
+				.AutoWidth()
+				.Padding(0.f)
+					[
+						SNew(SImage)
+						.Image(&Brush)
+					]
+
+				+ SHorizontalBox::Slot()
+				.HAlign(HAlign_Fill)
+				.FillWidth(1.0f)
+				.Padding(10.f)
+					[
+						SNew(STextBlock)
+						.Text(DialogueText)
+						.WrapTextAt(250.f)
+					];
+		}
+	}
+}
+```
+
+So lets get to CreateNodeContentArea! By default (at least in FlowGraph) this function only adds essentially a Horizontal Box (wrapped inside a Border) with 2 slots for the pins on each side. Fortunately we don't have to worry about these, we can just reuse the variables that have already been made for us!
+
+```cpp
+TSharedRef<SWidget> SFlowGraphNode_Dialogue::CreateNodeContentArea()
+{
+	return SNew(SBorder)
+		.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Left)
+			.AutoWidth()
+			[
+				SAssignNew(LeftNodeBox, SVerticalBox)
+			]
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1.0f)
+			[
+				CreateDialogueContentArea()
+			]
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.HAlign(HAlign_Right)
+			[
+				SAssignNew(RightNodeBox, SVerticalBox)
+			]
+		];
+}
+```
+
+Doing this will give us something that should look like this!
+
+![](/cdns/10.png)
+
+Pretty cool, isn't it??? From there, I wanted to make the dialogue nodes look almost like the in-game dialogue box, with the character name and pronouns and the cool look. At this point I've had to override the UpdateGraphNode function, which would probably be too much to go into for this post, but hopefully Slate (and creating custom nodes) is somewhat less intimidating now! Feel free to reference the finished code at the top of the section.
+
+## BONUS: But I want those pins to be centered!!
+
+You got it! All you need to do is add
+
+```cpp
+.VAlign(VAlign_Center)
+```
+
+to each of the slots!
+
+```cpp
+TSharedRef<SWidget> SFlowGraphNode_Dialogue::CreateNodeContentArea()
+{
+	return SNew(SBorder)
+		.BorderImage(FEditorStyle::GetBrush("NoBorder"))
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SHorizontalBox)
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Left)
+			.VAlign(VAlign_Center)
+			.AutoWidth()
+			[
+				SAssignNew(LeftNodeBox, SVerticalBox)
+			]
+			+SHorizontalBox::Slot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1.0f)
+			[
+				CreateDialogueContentArea()
+			]
+			+SHorizontalBox::Slot()
+			.AutoWidth()
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(RightNodeBox, SVerticalBox)
+			]
+		];
+}
+```
+
+![](/cdns/11.png)
+
+## BONUS: What if my node has multiple pins?
+
+_it just works™_
+
+![](/cdns/12.png)
+
+Thanks for reading!
+
+For the blueprint node-alike in the introduction, I basically replicated the CSS from https://blueprintue.com/
