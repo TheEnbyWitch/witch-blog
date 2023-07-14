@@ -40,6 +40,11 @@ const posts = (await getCollection("blog"))
                 class="block text-right opacity-50"
                 date={post.data.pubDate}
               />
+              {post.data.updatedDate && (
+                <span class="block text-right opacity-50">
+                  Last updated on <FormattedDate date={post.data.updatedDate} />
+                </span>
+              )}
             </a>
           </li>
         ))
