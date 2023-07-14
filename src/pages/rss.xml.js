@@ -1,6 +1,6 @@
 import rss from "@astrojs/rss";
 import { getCollection } from "astro:content";
-import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+import { SITE_TITLE, SITE_DESCRIPTION, SHOW_DRAFTS } from "../consts";
 
 export async function get(context) {
   const posts = await getCollection("blog");
@@ -12,7 +12,7 @@ export async function get(context) {
     items: posts
       .filter((v) => {
         // if DEV, show draft posts
-        if (import.meta.env.DEV == true) {
+        if (SHOW_DRAFTS) {
           return true;
         }
         return v.data.draft !== true;
