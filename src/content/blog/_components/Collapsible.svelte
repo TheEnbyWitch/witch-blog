@@ -32,7 +32,7 @@
   <div
     class="m-0 p-0 flex flex-col dark:bg-gray-800/25 border border-black/25 rounded-md"
   >
-    <button on:click={() => (visible = !visible)}
+    <button class="" on:click={() => (visible = !visible)}
       >{`${visible ? "Hide" : "Show"} ${name ? name : "content"}`}</button
     >
     {#if visible}
@@ -42,8 +42,8 @@
     {/if}
   </div>
 {:else}
-  <details>
-    <summary>
+  <details class="">
+    <summary class={``}>
       {name ? name : ""}
     </summary>
     <slot />

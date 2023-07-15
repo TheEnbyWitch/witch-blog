@@ -3,4 +3,4 @@
 
 export const SITE_TITLE = "Blog of The Enby Witch";
 export const SITE_DESCRIPTION = "Welcome to my blog!";
-export const SHOW_DRAFTS = !import.meta.env.NO_DRAFTS || import.meta.env.DEV;
+export const SHOW_DRAFTS = !import.meta.env.NO_DRAFTS;
