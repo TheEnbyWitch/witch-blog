@@ -5,3 +5,10 @@
     v.name.toLowerCase().includes("pronouns")
   )?.value;
 </script>
+
+<div>
+  <span
+    >{author.acct}
+    {#if pronouns}<span>{pronouns}</span>{/if}</span
+  >
+</div>
