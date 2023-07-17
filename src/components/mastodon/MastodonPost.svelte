@@ -69,7 +69,7 @@
         >{/if}
       {#if isAuthor}
         <span
-          class="md:text-base border inline-block bg-pink-300 border-black/10 dark:bg-pink-700 dark:border-white/10 px-2 rounded-full"
+          class="md:text-base text-shadow-pink-800 border inline-block bg-pink-300 border-black/10 dark:bg-pink-700 dark:border-white/10 px-2 rounded-full"
           >Author</span
         >{/if}</a
     >
