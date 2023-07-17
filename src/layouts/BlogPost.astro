@@ -5,10 +5,20 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import MainLayout from "./MainLayout.astro";
+import PostComments from "../components/mastodon/PostComments.svelte";
+import ActivityPubProfileBadge from "../components/mastodon/ActivityPubProfileBadge.astro";
 
 type Props = CollectionEntry<"blog">["data"];
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const {
+  title,
+  description,
+  pubDate,
+  updatedDate,
+  heroImage,
+  mastodonPost,
+  authors,
+} = Astro.props;
 ---
 
 <MainLayout
@@ -19,6 +29,13 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
   <article
     class="max-w-prose mx-auto relative prose-screen:rounded-xl bg-gray-100 dark:bg-transparent dark:bg-gradient-to-bl dark:from-pink-950/70 dark:to-pink-950/50 border border-black/25 drop-shadow-xl p-4"
   >
+    <div class="flex flex-row flex-wrap justify-center items-center gap-2 mb-4">
+      {
+        authors.map((author) => (
+          <ActivityPubProfileBadge activityPubUrl={author} />
+        ))
+      }
+    </div>
     {
       heroImage ? (
         <>
@@ -72,5 +89,14 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
     <div class="prose prose-gray prose-pink dark:prose-invert w-full mx-auto">
       <slot />
     </div>
+    {
+      mastodonPost && (
+        <PostComments
+          src={mastodonPost}
+          blogPostAuthors={authors}
+          client:visible
+        />
+      )
+    }
   </article>
 </MainLayout>
