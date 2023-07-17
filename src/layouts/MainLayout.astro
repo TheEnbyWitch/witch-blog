@@ -24,5 +24,21 @@ const { pageTitle, pageDescription, pageImage } = Astro.props;
       <slot />
     </main>
     <Footer />
+    <style is:global>
+      html {
+        text-shadow: 0 1px 1px rgb(255 255 255/5);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html {
+          text-shadow: 0 1px 1px rgb(0 0 0 / 25);
+        }
+      }
+
+      /* force dark mode text-shadow */
+      .astro-code {
+        text-shadow: 0 1px 1px rgb(0 0 0 / 25);
+      }
+    </style>
   </body>
 </html>

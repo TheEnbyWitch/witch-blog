@@ -1,8 +1,11 @@
 <script>
+  import { fade, slide } from "svelte/transition";
+
   export let src;
   export let blogPostAuthors;
 
   import MastodonPost from "./MastodonPost.svelte";
+  import { tweened } from "svelte/motion";
 
   const postUrlRegex = /https:\/\/(\S+)\/(\S+)\/(\S+)/gm;
 
@@ -29,6 +32,10 @@
     return jsonResponse;
   }
 
+  const postReplies = tweened(0, { duration: 1000 });
+  const postFavourites = tweened(0, { duration: 1000 });
+  const postBoosts = tweened(0, { duration: 1000 });
+
   async function getPostDetails() {
     const post = await getMastodonAPI(postDetailsUrl);
     const comments = await getMastodonAPI(postCommentsUrl);
@@ -49,6 +56,10 @@
       }
       commentDict[comment["id"]] = comment;
     });
+
+    $postReplies = post.replies_count;
+    $postFavourites = post.favourites_count;
+    $postBoosts = post.reblogs_count;
 
     return [post, threadedComments];
   }
@@ -74,24 +85,28 @@ This component was made possible thanks to:
 {#await postDetails}
   <p>Loading...</p>
 {:then [post, comments]}
-  <div class="prose prose-pink dark:prose-invert">
+  <div class="prose prose-pink dark:prose-invert" transition:fade|global>
     <p class="flex flex-row gap-2 my-2">
-      <span>{`💬 ${post.replies_count}`}</span>
-      <span>{`❤️ ${post.favourites_count}`}</span>
-      <span>{`🔁 ${post.reblogs_count}`}</span>
+      <span>{`💬 ${Math.round($postReplies)}`}</span>
+      <span>{`❤️ ${Math.round($postFavourites)}`}</span>
+      <span>{`🔁 ${Math.round($postBoosts)}`}</span>
       <span class="grow" />
       <a href={src}>Open Mastodon post</a>
     </p>
   </div>
   <div class="flex flex-col gap-2">
     {#each comments as post}
-      <MastodonPost {post} {blogPostAuthors} />
+      <div transition:slide|global={{ duration: 1000 }}>
+        <MastodonPost {post} {blogPostAuthors} />
+      </div>
     {/each}
   </div>
 {:catch error}
-  <p class="prose prose-pink dark:prose-invert">
-    There was an error grabbing post details. Don't sweat it, you can see the
-    comments at <a href={src}>{src}</a>
-  </p>
-  <p>{error}</p>
+  <div transition:fade|global>
+    <p class="prose prose-pink dark:prose-invert">
+      There was an error grabbing post details. Don't sweat it, you can see the
+      comments at <a href={src}>{src}</a>
+    </p>
+    <p>{error}</p>
+  </div>
 {/await}
