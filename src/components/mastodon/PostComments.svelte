@@ -1,7 +1,7 @@
 <script>
   export let src;
+  export let blogPostAuthors;
 
-  import sanitizeHtml from "sanitize-html";
   import MastodonPost from "./MastodonPost.svelte";
 
   const postUrlRegex = /https:\/\/(\S+)\/(\S+)\/(\S+)/gm;
@@ -33,9 +33,11 @@
     const post = await getMastodonAPI(postDetailsUrl);
     const comments = await getMastodonAPI(postCommentsUrl);
 
+    // Code for making replies to replies children of said replies,
+    // thanks to: https://fietkau.blog/2023/another_blog_resurrection_fediverse_new_comment_system
     const parentID = post.id;
-    let threadedComments = [];
 
+    let threadedComments = [];
     let commentDict = {};
     comments.descendants.forEach((comment) => {
       if (comment["visibility"] != "public") return;
@@ -66,21 +68,26 @@ This component was made possible thanks to:
     - https://fietkau.blog/2023/another_blog_resurrection_fediverse_new_comment_system
     
 -->
-
+<div class="prose prose-pink dark:prose-invert">
+  <h2>Comments</h2>
+</div>
 {#await postDetails}
   <p>Loading...</p>
 {:then [post, comments]}
-  {@debug post}
-  {@debug comments}
-  <p>
-    {`💬 ${post.replies_count}`}
-    {`❤️ ${post.favourites_count}`}
-    {`🔁 ${post.reblogs_count}`}
-  </p>
-
-  {#each comments as post}
-    <MastodonPost {post} />
-  {/each}
+  <div class="prose prose-pink dark:prose-invert">
+    <p class="flex flex-row gap-2 my-2">
+      <span>{`💬 ${post.replies_count}`}</span>
+      <span>{`❤️ ${post.favourites_count}`}</span>
+      <span>{`🔁 ${post.reblogs_count}`}</span>
+      <span class="grow" />
+      <a href={src}>Open Mastodon post</a>
+    </p>
+  </div>
+  <div class="flex flex-col gap-2">
+    {#each comments as post}
+      <MastodonPost {post} {blogPostAuthors} />
+    {/each}
+  </div>
 {:catch error}
   <p class="prose prose-pink dark:prose-invert">
     There was an error grabbing post details. Don't sweat it, you can see the

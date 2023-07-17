@@ -17,6 +17,11 @@ const blog = defineCollection({
       .transform((str) => (str ? new Date(str) : undefined)),
     heroImage: z.string().optional(),
     draft: z.boolean().optional().default(false),
+    mastodonPost: z.string().optional(),
+    authors: z
+      .array(z.string())
+      .optional()
+      .default(["https://peoplemaking.games/@TheEnbyWitch"]),
   }),
 });
 
