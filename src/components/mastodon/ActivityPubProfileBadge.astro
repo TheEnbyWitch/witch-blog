@@ -2,47 +2,47 @@
 const { activityPubUrl } = Astro.props;
 
 async function getAuthorData(url) {
-    const jsonUrl = `${url}.json`;
-    const authorData = await fetch(jsonUrl);
-    const authorJson = await authorData.json();
+  const jsonUrl = `${url}.json`;
+  const authorData = await fetch(jsonUrl);
+  const authorJson = await authorData.json();
 
-    return {
-        name: authorJson.name,
-        url: !!authorJson.url ? authorJson.url : url,
-        icon: authorJson.icon.url,
-        pronouns: authorJson.attachment?.find((field) => {
-            return (
-                field.type == "PropertyValue" &&
-                field.name.toLowerCase().includes("pronouns")
-            );
-        })?.value,
-    };
+  return {
+    name: authorJson.name,
+    url: !!authorJson.url ? authorJson.url : url,
+    icon: authorJson.icon.url,
+    pronouns: authorJson.attachment?.find((field) => {
+      return (
+        field.type == "PropertyValue" &&
+        field.name.toLowerCase().includes("pronouns")
+      );
+    })?.value,
+  };
 }
 
 const author = await getAuthorData(activityPubUrl);
 ---
 
 <a href={author.url}>
-    <div
-        class="flex flex-row gap-2 p-1 items-center border border-black/10 bg-pink-50 dark:bg-pink-950 dark:border-white/10 rounded-full drop-shadow-sm"
-    >
-        <img
-            class="w-8 h-8 rounded-full border dark:border-white/10 border-black/25"
-            src={author.icon}
-        />
-        <div class="flex flex-col mr-2">
-            <div>
-                <span>
-                    {author.name}
-                    {
-                        author.pronouns && (
-                            <span class="ml-1 border inline-block bg-pink-100 border-black/10 dark:bg-pink-900 dark:border-white/10 px-2 rounded-full">
-                                {author.pronouns}
-                            </span>
-                        )
-                    }
-                </span>
-            </div>
-        </div>
+  <div
+    class="flex flex-row gap-2 p-1 items-center border border-black/10 bg-pink-50 dark:bg-pink-950 dark:border-white/10 rounded-full drop-shadow-sm"
+  >
+    <img
+      class="w-8 h-8 rounded-full border dark:border-white/10 border-black/25"
+      src={author.icon}
+    />
+    <div class="flex flex-col mr-2">
+      <div>
+        <span>
+          {author.name}
+          {
+            author.pronouns && (
+              <span class="ml-1 border inline-block bg-pink-100 border-black/10 dark:bg-pink-900 dark:border-white/10 px-2 rounded-full">
+                {author.pronouns}
+              </span>
+            )
+          }
+        </span>
+      </div>
     </div>
+  </div>
 </a>
