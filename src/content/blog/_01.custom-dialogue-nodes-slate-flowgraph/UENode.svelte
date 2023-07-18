@@ -3,7 +3,7 @@
 </script>
 
 <div
-  style="background-color: rgba(15, 15, 15, 0.9); border: 1px solid rgb(0, 0, 0); border-radius: 5px; box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 5px 1px; color: rgb(255, 255, 255); display: inline-block; font-family: Roboto, sans-serif; font-size: 13px; font-weight: 500; white-space: nowrap; margin-top: 8px; z-index: 5;"
+  style="background-color: rgba(15, 15, 15, 0.9); border: 1px solid rgb(0, 0, 0); border-radius: 5px; box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 5px 1px; color: rgb(255, 255, 255); display: inline-block; font-family: Roboto, sans-serif; font-size: 13px; font-weight: 500; white-space: nowrap; margin-top: 8px; z-index: 5; text-shadow: none;"
 >
   <div
     style="border-radius: 5px 5px 0px 0px; line-height: 22px; padding: 1px 1px 1px 10px; background: linear-gradient(90deg, rgba(121, 201, 255, 0.4) 0px, rgba(121, 201, 255, 0.1));"
