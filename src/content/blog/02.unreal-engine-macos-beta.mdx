@@ -1,0 +1,32 @@
+---
+title: "Getting Unreal Engine working on macOS Sonoma's Public Beta"
+description: "xcode-select saves your life if you tell it to"
+slug: unreal-engine-macos-beta
+tags: [unreal, macos, sonoma]
+pubDate: "Jul 22 2023"
+heroImage: "/_02.uemb/thesolution.png"
+
+authors: ["https://peoplemaking.games/@TheEnbyWitch"]
+---
+
+This is a little bit of a short post, but I really haven't seen anyone talk about it on the internet so I'm putting this out so people can find it.
+
+Here's how you can fix Unreal complaining about Xcode on macOS Sonoma's Public Beta (provided you installed the [Xcode beta](https://developer.apple.com/download/all/?q=Xcode))
+
+```bash
+> xcode-select -p
+/Library/Developer/CommandLineTools
+> sudo xcode-select -s /Applications/Xcode-beta.app/Contents/Developer
+> xcode-select -p
+/Applications/Xcode-beta.app/Contents/Developer
+```
+
+## How?
+
+The Xcode beta doesn't install itself in the same way that the App Store beta does and it doesn't update xcode-select which is how Unreal figures out where to grab the SDKs from.
+
+Also, you can't use Xcode 14 on Sonoma.
+
+import KoFi from "./_components/KoFi.svelte";
+
+<KoFi />
