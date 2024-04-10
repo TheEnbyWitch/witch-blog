@@ -134,6 +134,10 @@ void UWindDirectionalSourceComponent::Deactivate()
 Honestly, it's such an underutilized element of the engine, that pretty much most Unreal developers I know don't know about it.  
 You could bind to `OnComponentActivated` and `OnComponentDeactivated` events in Blueprints, or override the `Activate` and `Deactivate` functions to do your own behaviour related to things being active.
 
+I personally am using this for a Lock On/Target Component in my platformer, and it makes sense there, because if I were to add my own "Is Active" thing, it'd be reinventing a very small part of the wheel.
+
+Hope you found it useful!
+
 import KoFi from "./_components/KoFi.svelte";
 
 <KoFi />
