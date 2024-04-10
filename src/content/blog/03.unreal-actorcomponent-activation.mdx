@@ -1,0 +1,143 @@
+---
+title: "What's the deal with Activation of Components in Unreal?"
+description: "TL;DR it's a very underutilized feature of the engine that's probably only used in 2 things you care about"
+slug: unreal-actorcomponent-activation
+tags: [unreal]
+pubDate: "Mar 04 2024"
+heroImage: "/_03.ueacact/thumbnail.png"
+draft: true
+
+mastodonPost: https://nyan.lol/@BlogOfTheEnbyWitch/110759980951310570
+authors: ["https://peoplemaking.games/@TheEnbyWitch"]
+---
+
+Have you ever wondered if this `Auto Activate` thing you see in Components does anything?
+
+Let's begin with figuring out what does Activating or Deactivating a component does!
+
+Take a look at the `UActorComponent::Activate` and `UActorComponent::Deactivate` functions.
+
+```cpp
+void UActorComponent::Activate(bool bReset)
+{
+	if (bReset || ShouldActivate()==true)
+	{
+		SetComponentTickEnabled(true);
+		SetActiveFlag(true);
+
+		OnComponentActivated.Broadcast(this, bReset);
+	}
+}
+
+void UActorComponent::Deactivate()
+{
+	if (ShouldActivate()==false)
+	{
+		SetComponentTickEnabled(false);
+		SetActiveFlag(false);
+
+		OnComponentDeactivated.Broadcast(this);
+	}
+}
+```
+
+Seems pretty straightforward, right? When we try deactivating a component, it gets its tick disabled, broadcasts an event (that you can listen to in Blueprints) and that's about it. Also you can set `bReset` to forcibly reactivate an already activated component.
+
+import Note from "./_components/Note.svelte";
+
+<Note>
+  Not every component gets its Tick disabled when Deactivated, but that's only
+  if they override the default implementation.
+</Note>
+
+A very important thing to note though, is that this _does not_ work like Unity, where if you deactivated an object/component it would completely cease to exist (except in memory).
+
+If we take a look at the implementations of the `Activate` function, we'll see that only about a dozen components use it.
+![](/_03.ueacact/implementations.png)
+
+You'll notice that Primitive Components (such as Static Mesh, Skeletal Mesh) are missing. Meaning even though their ticks get disabled, they will still be visible in the game world. And the same goes for lights too.
+
+## What components make use of this?
+
+### Audio Components
+
+The component plays audio when active and stops when deactivated! This is also one of the few components that I know of where setting `Auto Activate` matters. The `Play` and `Stop` functions also automatically update the Activated state.
+
+```cpp
+void UAudioComponent::Activate(bool bReset)
+{
+	if (bReset || ShouldActivate() == true)
+	{
+		Play();
+		if (IsActive())
+		{
+			OnComponentActivated.Broadcast(this, bReset);
+		}
+	}
+}
+
+void UAudioComponent::Deactivate()
+{
+	if (ShouldActivate() == false)
+	{
+		Stop();
+
+		if (!IsActive())
+		{
+			OnComponentDeactivated.Broadcast(this);
+		}
+	}
+}
+```
+
+### Niagara/Emitter Components
+
+I won't include snippets of code for this one, since they're pretty big functions. But just like with Audio Components, Activation determines if the particle effect is being played.
+
+However, unlike Audio Components, if you make your particles stay even after the System has stopped, they will continue to exist until the end of their lifetimes as seen in the clip below.
+
+<video controls>
+  <source src="/_03.ueacact/torch_example.mp4" type="video/mp4" />
+</video>
+Credit: Megan Fox from Glass Bottom Games
+
+The implementation of the above is pretty simple! All that's happening is that the Niagara Component on the torch is getting activated and deactivated respectively!
+
+### Wind Directional Source Components
+
+Activation determines if the wind source affects the world or not. Neat! But also this could have been a bool like it is on Lights with `Affects World`.
+
+_but i guess it works_
+
+```cpp
+void UWindDirectionalSourceComponent::Activate(bool bReset)
+{
+	Super::Activate(bReset);
+	if (bRenderStateCreated)
+	{
+		GetWorld()->Scene->AddWindSource(this);
+	}
+}
+
+void UWindDirectionalSourceComponent::Deactivate()
+{
+	Super::Deactivate();
+	if (SceneProxy)
+	{
+		GetWorld()->Scene->RemoveWindSource(this);
+	}
+}
+```
+
+## How could I make use of this?
+
+Honestly, it's such an underutilized element of the engine, that pretty much most Unreal developers I know don't know about it.  
+You could bind to `OnComponentActivated` and `OnComponentDeactivated` events in Blueprints, or override the `Activate` and `Deactivate` functions to do your own behaviour related to things being active.
+
+I personally am using this for a Lock On/Target Component in my platformer, and it makes sense there, because if I were to add my own "Is Active" thing, it'd be reinventing a very small part of the wheel.
+
+Hope you found it useful!
+
+import KoFi from "./_components/KoFi.svelte";
+
+<KoFi />
