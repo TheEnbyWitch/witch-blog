@@ -1,0 +1,112 @@
+---
+title: "Portland Retro Gaming Expo 2024: A Post-Mortem"
+description: "it was my first time exhibiting, and I enjoed it a lot!"
+slug: prge2024
+tags: [personal]
+pubDate: "Oct 03 2024"
+heroImage: "/_05.prge2024/thumb.jpg"
+
+authors: ["https://peoplemaking.games/@TheEnbyWitch"]
+---
+
+import ImageWithFigCaption from "./_components/ImageWithFigCaption.svelte";
+
+export const components = {
+  img: ImageWithFigCaption,
+};
+
+This past Saturday (September 28th) I showed off my game [Paula The Possum](https://girlfriend.games/) at the PIGSquad booth at Portland Retro Gaming Expo 2024. It went great! Many people came and played my game, and I got so many compliments about how good it plays (and how pretty my dress was!).
+
+I wanted to write this to basically give some tips that other folks may find useful when preparing for their first showcase.
+
+## Plan things as early as possible as soon as you know you're exhibiting
+
+I found out I was accepted to exhibit about 12 days before the expo. I didn't get everything sorted right away, but I've planned out what I need, what I can get, and commissioned an artist to get key art done for the expo. I also a few days later realized I could have gotten stickers to give out to people at the expo, but at that point it was too late to get an order in. Maybe next time!
+
+## Signage is good
+
+Signs are probably the easiest things you can get for an expo. I got acrylic frames from MUJI, and printed my signs at FedEx. I wouldn't personally recommend FedEx for signs because the print quality of colors isn't the best, but know that you can get stuff printed there if you need it ASAP.
+
+For the sign designs, I had two. One was with the key art and a QR code in the corner, and the other was with the control scheme and some screenshots of the game.
+
+![They are so heckin' cool.|There are two signs on top of each other. The top one shows the key art for the game with a QR code pointing to the girlfriend.games website. The bottom one shows the controller scheme for the game and some screenshots.](/_05.prge2024/signs.jpg)
+
+The QR code does bring me to this, which is...
+
+## Do not assume people will have good QR code scanners
+
+I have used my iPhone 15 Plus to determine how readable my QR code is. Obviously, it's not the kind of phone that most people have. My wife pointed out there was one person at the expo that tried to scan the QR code, but just couldn't.
+
+So here are some rules that I'm gonna use from now on:
+
+- Make a QR code that's purely black and white, like the standard, and make it as large as you can.
+- Don't just use an iPhone to test how easy it is to scan.
+- Branded QR codes do look cool, but they will probably also be not what certain scanners expect.
+
+## Bring a spare laptop and a capture card
+
+I knew I would have a monitor available, but I knew from the start that I would not be able to easily see what is happening on the screen. Fortunately for me, I had a MacBook I could bring with me, and I could borrow my wife's Elgato HD60 capture card.
+
+![This is where I spent most of the expo. 9 hours. It honestly was way better than I expected. But I did see my attract video SO MANY times that day!|This was my view at the expo. My MacBook is in the bottom left corner and the Elgato Capture app is open. You can also see my MX Ergo mouse and a vitamin water that helped me stay hydrated throughout the day. You can also see the Switch in the Dock and the Elgato HD60 capture card.](/_05.prge2024/expo_behind.jpg)
+
+The setup worked PERFECTLY. It was incredibly valuable to see how people were playing my game, and I could even point them in the right direction if they needed help!  
+Not to mention the ability to record is also useful in case some unexpected bug happened (fortunately nothing too big happened). And it was great for taking notes!
+
+## Make an "attract" video
+
+If you can make and use an attract video of your game, do it. It’ll catch people’s attention better. And if you’re using a console to show off your game, check the docs if there isn’t already a mode for exhibitions you can use!
+
+When it came to making the video, the steps I took were basically:
+
+- Record myself playing the game (multiple times if needed). Nice camera angles are a bonus!
+- I threw the footage into DaVinci Resolve and cut it up so it was only clips that seemed interesting and representative of the game.
+- Throw out clips to fit a set runtime of the video. I aimed for at least 30 seconds, and I actually managed to fill it all with good clips, so I ended up not throwing out anything at all.
+- At the beginning of the video, add your branding and game logo. It doesn't need to be on screen for long. If you're doing the attract video inside the game, where you have a Title Screen come up between loops, feel free to skip that step.
+- This is something I didn't do, but next time I definitely should put the game logo and QR code in the corners.
+
+Here's the attract video I ended up making and using at the expo!
+
+<video controls loop>
+  <source
+    src="/_05.prge2024/expo_paula_attract_web_small.mp4"
+    type="video/mp4"
+  />
+</video>
+
+If you're worried about certain bugs staying in a trailer, don't worry, I have seen worse, hahah.
+
+So the flow basically ended up being:
+
+- While waiting for someone to play the game, the attract video would be played on loop.
+- Once someone pressed any button, the game executable started and showed the Title Screen. Then after pressing a button the game would start. Next time I'm gonna skip the Title Screen and jump straight into the game when it's booted up.
+- Once the demo was finished, the game quit, and a "thank you for playing!" screen was shown and encouraged people to sign up for the [newsletter](https://buttondown.com/girlfriendgames) and after a few seconds it went back to playing the attract video.
+
+An extra tip if you have that kind of setup: make sure you have an easily accessible way for you to shut down/restart the game when left idle!
+
+## Make sure you're testing your game thoroughly to catch issues as early as possible
+
+This is probably the one that I think is _the_ most important. At expos, there will be a wide variety of people playing the game. And whatever route you take while playtesting your demo may not be what other people will do.
+
+See a bug that causes a boss fight to not happen? **DO NOT**, I repeat, **_DO NOT_** write it off as an edge case that you will fix later!
+
+I had a bug like this happen a few times, but I couldn't consistently recreate it. It turned out it was an issue with how I was resetting the world when the player respawned at a checkpoint.
+
+I know it can be very easy to playtest your game with a consistent route, and ultimately that was what allowed that bug to go mostly unnoticed. If I had to respawn at a checkpoint more often, I maybe would have caught it, but I got so good at the game, I rarely did.
+
+So the day before the expo, I planned to not touch the game. I had everything I needed done, why wouldn't I?
+
+Then I gave my wife the Switch to playtest in the evening. She got that bug with the boss fight not spawning.
+
+**_Fuck._**
+
+I had hoped to go to bed by 10pm, but unfortunately I had to spend 2 hours reworking things and making sure that a situation like this wouldn't happen again.
+
+As an extra failsafe, I have also added a button in the pause menu to restart the level, which would restart the logic, but also keep all progress that the player has made. And fortunately, I only needed to do it once at the expo!
+
+## And that's it!
+
+Thank you so much for reading this. I hope you learned something new!
+
+import KoFi from "./_components/KoFi.svelte";
+
+<KoFi />
